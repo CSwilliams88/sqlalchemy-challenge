@@ -10,9 +10,7 @@ from flask import Flask, jsonify
 
 import datetime as dt
 
-#################################################
-# Database Setup
-#################################################
+# setup database
 engine = create_engine("sqlite:///../hawaii.sqlite", echo = False)
 
 # reflect an existing database into a new model
@@ -27,14 +25,10 @@ Station = Base.classes.station
 # Create our session (link) from Python to the DB
 session = Session(engine)
 
-#################################################
-# Flask Setup
-#################################################
+#set up flask
 app = Flask(__name__)
 
-#################################################
-# Flask Routes
-#################################################
+#create flask routes
 
 @app.route("/")
 def welcome():
@@ -49,14 +43,12 @@ def welcome():
         f"/api/v1.0/<start>/<end>"
     )
 
-#################################################
-# Precipitation
-#################################################
+#flask route and display for precipitation
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
-    maxDate = dt.date(2017, 8 ,23)
-    year_ago = maxDate - dt.timedelta(days=365)
+    mostrecent_date = dt.date(2017, 8 ,23)
+    year_ago = mostrecent_date - dt.timedelta(days=365)
 
     past_temp = (session.query(Measurement.date, Measurement.prcp)
                 .filter(Measurement.date <= maxDate)
@@ -67,37 +59,31 @@ def precipitation():
     
     return jsonify(precip)
 
-#################################################
-# Stations
-#################################################
+#flask route and display for stations
 
 @app.route('/api/v1.0/stations')
 def stations():
 
-    stations_all = session.query(Station.station).all()
+    avail_stations = session.query(Station.station).all()
 
-    return jsonify(stations_all)
+    return jsonify(avail_stations)
 
-#################################################
-# Tobs
-#################################################
+#flask route and display for tobs
 
 @app.route('/api/v1.0/tobs') 
 def tobs():  
-    maxDate = dt.date(2017, 8 ,23)
-    year_ago = maxDate - dt.timedelta(days=365)
+    mostrecent_date = dt.date(2017, 8 ,23)
+    year_ago = mostrecent_date - dt.timedelta(days=365)
 
     lastyear = (session.query(Measurement.tobs)
                 .filter(Measurement.station == 'USC00519281')
-                .filter(Measurement.date <= maxDate)
+                .filter(Measurement.date <= mostrecent_date)
                 .filter(Measurement.date >= year_ago)
                 .order_by(Measurement.tobs).all())
     
     return jsonify(lastyear)
 
-#################################################
-# Start
-##################################################
+#starting point
 
 @app.route('/api/v1.0/<start>') 
 def start(start=None):
@@ -105,19 +91,17 @@ def start(start=None):
     #start = Measurement.date <= '2010-01-01'
     #end = Measurement.date >= '2017-08-23'
 
-    tobs_only = (session.query(Measurement.tobs).filter(Measurement.date.between(start, '2017-08-23')).all())
+    normals = (session.query(Measurement.tobs).filter(Measurement.date.between(start, '2017-08-23')).all())
     
-    tobs_df = pd.DataFrame(tobs_only)
+    normals_df = pd.DataFrame(normals)
 
-    tavg = tobs_df["tobs"].mean()
-    tmax = tobs_df["tobs"].max()
-    tmin = tobs_df["tobs"].min()
+    tavg = normals_df["tobs"].mean()
+    tmax = normals_df["tobs"].max()
+    tmin = normals_df["tobs"].min()
     
     return jsonify(tavg, tmax, tmin)
 
-#################################################
-# Start & End
-##################################################
+#start and end point
 
 @app.route('/api/v1.0/<start>/<end>') 
 def startend(start=None, end=None):
@@ -125,13 +109,13 @@ def startend(start=None, end=None):
     #start = Measurement.date <= '2010-01-01'
     #end = Measurement.date >= '2017-08-23'
 
-    tobs_only = (session.query(Measurement.tobs).filter(Measurement.date.between(start, end)).all())
+    normals = (session.query(Measurement.tobs).filter(Measurement.date.between(start, end)).all())
     
-    tobs_df = pd.DataFrame(tobs_only)
+    normals_df = pd.DataFrame(normals)
 
-    tavg = tobs_df["tobs"].mean()
-    tmax = tobs_df["tobs"].max()
-    tmin = tobs_df["tobs"].min()
+    tavg = normals_df["tobs"].mean()
+    tmax = normals_df["tobs"].max()
+    tmin = normals_df["tobs"].min()
     
     return jsonify(tavg, tmax, tmin)
 
